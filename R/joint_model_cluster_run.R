@@ -56,7 +56,7 @@ sim_out <- sampling(joint_model,
                                                          K = 2,
                                                          dirichlet_alpha=1,
                                                          other_covariates = cov_mat,
-                                                         bm_outcome = bm_data$waist_rate_change,
+                                                         outcome = bm_data$waist_rate_change,
                                                          simulate = 0),
                     seed=seed
                         )
