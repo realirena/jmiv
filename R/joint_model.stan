@@ -149,28 +149,27 @@ model {
 
 
 
-// generated quantities {
-//   // uncomment if you want to simulate data! 
-//   matrix[N,Q] sim_hormones;
-//   vector[Q] mu[N]; 
-//   vector[I] sim_outcome;
-//   vector[I] outcome_mu;
-//    // uncomment if you want to simulate data! 
-//    //simulate hormone data instead of using the data to generate it 
-//   if(simulate == 1){
-//     for(n in 1:N){
-//        for(q in 1:Q){ // for each hormone
-//            mu[n][q] = dot_product(B[id[n]][,q], f_time_fmp[n]);  //to get the means of the bi's
-//       }
-//       sim_hormones[n] = to_row_vector(multi_normal_rng(mu[n], S[id[n]]));
-//     }
-//     for(i in 1:I){
-//       outcome_mu[i] = sum(B[i] .* alpha) + sum(S[i] .* gamma);
-//       sim_outcome[i] = normal_rng(outcome_mu[i], outcome_sigma);
-//     }
-//   }
-// 
-// }
+generated quantities {
+  // uncomment if you want to simulate data!
+  matrix[N,Q] sim_hormones;
+  vector[Q] mu[N];
+  vector[I] sim_outcome;
+  vector[I] outcome_mu;
+   //simulate hormone data instead of using the data to generate it
+  if(simulate == 1){
+    for(n in 1:N){
+       for(q in 1:Q){ // for each hormone
+           mu[n][q] = dot_product(B[id[n]][,q], f_time_fmp[n]);  //to get the means of the bi's
+      }
+      sim_hormones[n] = to_row_vector(multi_normal_rng(mu[n], S[id[n]]));
+    }
+    for(i in 1:I){
+      outcome_mu[i] = a0 + sum(B[i] .* alpha) + sum(S[i] .* gamma);
+      sim_outcome[i] = normal_rng(outcome_mu[i], outcome_sigma);
+    }
+  }
+
+}
 
 
 
