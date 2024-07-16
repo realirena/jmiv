@@ -28,7 +28,7 @@ data {
   matrix[N,Q] hormones; // this should be X_i at time t (Q-length vector of hormone values)
   
   //data for the outcome submodel:
-  vector[I] bm_outcome;
+  vector[I] outcome;
   // Whether or not to evaluate the likelihood
   int<lower = 0, upper = 1> simulate; 
 }
@@ -132,7 +132,7 @@ model {
   {
   if(simulate == 0){ 
        vector[Q] mu[N]; // for each person, vector of two hormone means
-       real bm_outcome_mu[I];
+       real outcome_mu[I];
       for(n in 1:N){
         for(q in 1:Q){ // for each hormone
            mu[n][q] = dot_product(B[id[n]][,q], f_time_fmp[n]);  //to get the means of the bi's
@@ -140,8 +140,8 @@ model {
          hormones[n] ~ multi_normal(mu[n], S[id[n]]);
       }
      for(i in 1:I){
-      bm_outcome_mu[i] = a0 + sum(B[i] .* alpha) + sum(S[i] .* gamma);
-      bm_outcome[i] ~ normal(bm_outcome_mu[i], outcome_sigma);
+      outcome_mu[i] = a0 + sum(B[i] .* alpha) + sum(S[i] .* gamma);
+      outcome[i] ~ normal(outcome_mu[i], outcome_sigma);
      }
    }
   } 

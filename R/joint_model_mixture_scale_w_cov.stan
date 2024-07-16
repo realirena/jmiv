@@ -31,7 +31,7 @@ data {
   matrix[N,Q] hormones; // this should be X_i at time t (Q-length vector of hormone values)
   
   //data for the outcome submodel:
-  vector[I] bm_outcome;
+  vector[I] outcome;
   matrix[I,n_cov] other_covariates;
   // Whether or not to evaluate the likelihood
   int<lower = 0, upper = 1> simulate; 
@@ -54,6 +54,7 @@ parameters {
   vector<lower=0, upper=pi()/2>[Q] tau_hyper_sigma; //hyperparamter on the log-Normal
   
  //for the outcome submodel 
+  real a0; //intercept term 
   matrix[P,Q] alpha; //coefficients for the mean 
   vector[Q + choose(Q, 2)] gamma_flat; //coefficients for the (co)variances, size of lower triangle of S
   vector<lower=0>[K] outcome_sigma; //parameter for the variance of the outcomes
@@ -134,7 +135,7 @@ model {
   {
   if(simulate == 0){ 
     vector[Q] mu[N]; // for each person, vector of two hormone means
-    real bm_outcome_mu[I];
+    real outcome_mu[I];
     for(n in 1:N){
       for(q in 1:Q){ // for each hormone
         mu[n][q] = dot_product(B[id[n]][,q], f_time_fmp[n]);  //to get the means of the bi's
@@ -142,9 +143,9 @@ model {
       hormones[n] ~ multi_normal(mu[n], S[id[n]]);
     }
     for(i in 1:I){
-        bm_outcome_mu[i] = sum(B[i] .* alpha) + sum(S[i] .* gamma) + dot_product(other_covariates[i,], beta_out);
+        outcome_mu[i] = a0+ sum(B[i] .* alpha) + sum(S[i] .* gamma) + dot_product(other_covariates[i,], beta_out);
       for(k in 1:K){
-        contributions[k] =  log(Pi[k]) + normal_lpdf(bm_outcome[i] | bm_outcome_mu[i], outcome_sigma[k]); 
+        contributions[k] =  log(Pi[k]) + normal_lpdf(outcome[i] | outcome_mu[i], outcome_sigma[k]); 
       }
      target += log_sum_exp(contributions); 
      }
@@ -172,7 +173,7 @@ generated quantities {
     }
     for(i in 1:I){
       comp[i] = categorical_rng(Pi);
-       outcome_mu[i] = sum(B[i] .* alpha) + sum(S[i] .* gamma) + dot_product(other_covariates[i,], beta_out);
+      outcome_mu[i] = a0 + sum(B[i] .* alpha) + sum(S[i] .* gamma) + dot_product(other_covariates[i,], beta_out);
       sim_outcome[i] = normal_rng(outcome_mu[i], outcome_sigma[comp[i]]);
     }
 }
