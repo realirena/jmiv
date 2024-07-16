@@ -1,4 +1,4 @@
-## cluster file 
+## cluster file
 
 rm(list=ls())
 library(rstan)
@@ -18,8 +18,8 @@ seed = 511+taskid*100
 set.seed(seed)
 
 Q = 2 # no of hormones
-P = 2 # no of basis functions 
-I = 1000 # no of subjects ## increase subjects 
+P = 2 # no of basis functions
+I = 1000 # no of subjects ## increase subjects
 
 S <- lapply(1:I, function(x){
   q <- c(rnorm(1, 0, 0.75)/2, rnorm(1, 0.5, 0.5)/2)
@@ -32,23 +32,23 @@ S <- lapply(1:I, function(x){
   return(Q_mat %*% R_mat %*%Q_mat)
 })
 
-## import estimated betas from the hormone data: 
+## import estimated betas from the hormone data:
 beta <- list()
 beta[[1]] <- c(0,2)
 beta[[2]] <- c(2,1)
 
-## import estimated Sigmas from the hormone data: 
+## import estimated Sigmas from the hormone data:
 Sigma <- list()
 Sigma[[1]] <- matrix(c(1, -0.05, -0.05, 1), ncol=P, nrow=P)
 Sigma[[2]] <-  matrix(c(1, -0.1, -0.1, 0.5), ncol=P, nrow=P)
 
 #---------------------------------------
-### simulate the time to FMP and the hormones now: 
+### simulate the time to FMP and the hormones now:
 ##---------------------------------------
 Ti = sample(6:15, I, replace=T) ##no visits per subject
 
 ## placeholder for the simulated time to FMPs
-time_fmp = rep(0, sum(Ti)) 
+time_fmp = rep(0, sum(Ti))
 
 ids <- unlist(lapply(seq_along(Ti), function(i) rep(i, Ti[i])))
 
@@ -56,7 +56,7 @@ ids <- unlist(lapply(seq_along(Ti), function(i) rep(i, Ti[i])))
 for(i in 1:I){
   if(i==1){
     time_fmp = (seq(1:Ti[i]) + (sample(c(-9:-1),1)) + rnorm(Ti[i],0,0.5)) ## addnoise
-    # apply basis function to time fmp 
+    # apply basis function to time fmp
     #f_time_fmp = bs(time_fmp, df=P)
     f_time_fmp = cbind(1, time_fmp)
   } else {
@@ -67,7 +67,7 @@ for(i in 1:I){
   }
 }
 
-### Generate the individual level coefficients 
+### Generate the individual level coefficients
 B  <- lapply(1:I, function(x){
   mat = matrix(ncol=Q, nrow=P)
   for(q in 1:Q){
@@ -82,7 +82,7 @@ sim_mu <- t(sapply(seq(nrow(f_time_fmp)), function(i){
   return(f_time_fmp[i,] %*% B_i)
 }))
 
-### generate the hormone data 
+### generate the hormone data
 # sim_hormones <- t(sapply(seq_along(ids), function(i){mvrnorm(1, sim_mu[i,], S[[ids[i]]])}))
 sim_hormones <- t(sapply(seq_along(ids), function(i){mvrnorm(1, sim_mu[i,], S[[ids[i]]])}))
 
@@ -90,33 +90,31 @@ sim_hormones <- t(sapply(seq_along(ids), function(i){mvrnorm(1, sim_mu[i,], S[[i
 ## unlist B into a matrix with nrow = I and ncol = P*Q
 B_design <- matrix(unlist(B), ncol=P*Q, byrow=T)
 
-## make each S_i an upper triangular matrix 
+## make each S_i an upper triangular matrix
 S_lower <- lapply(1:I, function(i){
   mat = S[[i]]
   mat[upper.tri(mat)==T] <- 0
   return(mat)
 })
-## unroll S into a design matrix: 
+## unroll S into a design matrix:
 S_design <- matrix(unlist(S_lower), ncol=Q*Q, byrow=T)
 
 
-## set the true coefficient parameters for the means and variances 
+## set the true coefficient parameters for the means and variances
 alpha <- c(-3, -3, -3, 3)
 gamma <- c(2,-1, 0,-2)
 
-## get the mean of the outcome variable: 
+## get the mean of the outcome variable:
 mu_outcome = (B_design%*%alpha + S_design%*%gamma)
 
-## set the variance of the outcome: 
+## set the variance of the outcome:
 outcome_sigma <- 1
 
-### generate the outcome data 
+### generate the outcome data
 sim_bm_outcome <- sapply(seq_along(1:I), function(i){rnorm(1, mu_outcome[i],outcome_sigma)})
 
 
-
-
-## change the location if necessary: 
+## change the location if necessary:
 compiled_model <- stan_model("/home/irena/gsra/swan_sims/simulations/0511_1000_ids/joint_model.stan")
 
 
@@ -125,8 +123,8 @@ compiled_model <- stan_model("/home/irena/gsra/swan_sims/simulations/0511_1000_i
 # id <- ids
 # hormones <- sim_hormones
 # simulate <- 0
-# 
-# 
+#
+#
 # stan_rdump(c("Q",
 #                 "P",
 #                 "I",
@@ -138,12 +136,12 @@ compiled_model <- stan_model("/home/irena/gsra/swan_sims/simulations/0511_1000_i
 
 ## set number of chains
 no_chains = 2
-## sample from the model: 
+## sample from the model:
 sim_out  <- sampling(compiled_model,
                      # include = TRUE,
                      sample_file=paste0('/home/irena/gsra/swan_sims/simulations/0511_1000_ids/results/rep_', taskid,'_model_samples.csv'),
                          iter = 2000,
-                         warmup=1000, #BURN IN 
+                         warmup=1000, #BURN IN
                          chains = no_chains,
                          seed = seed,
                          control = list(max_treedepth = 30,

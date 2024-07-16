@@ -52,6 +52,7 @@ parameters {
   vector<lower=0, upper=pi()/2>[Q] tau_hyper_sigma; //hyperparamter on the log-Normal
   
  //for the outcome submodel 
+   real a0; //intercept for the outcome 
   matrix[P,Q] alpha; //coefficients for the mean 
   vector[Q + choose(Q, 2)] gamma_flat; //coefficients for the (co)variances, size of lower triangle of S
   real<lower=0> outcome_sigma; //parameter for the variance of the outcomes
@@ -139,7 +140,7 @@ model {
          hormones[n] ~ multi_normal(mu[n], S[id[n]]);
       }
      for(i in 1:I){
-      bm_outcome_mu[i] = sum(B[i] .* alpha) + sum(S[i] .* gamma);
+      bm_outcome_mu[i] = a0 + sum(B[i] .* alpha) + sum(S[i] .* gamma);
       bm_outcome[i] ~ normal(bm_outcome_mu[i], outcome_sigma);
      }
    }
